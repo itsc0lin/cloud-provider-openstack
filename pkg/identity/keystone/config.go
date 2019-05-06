@@ -27,6 +27,7 @@ import (
 // Config configures a keystone webhook server
 type Config struct {
 	Address             string
+	UserAgent           string
 	CertFile            string
 	KeyFile             string
 	KeystoneURL         string
@@ -82,6 +83,7 @@ func (c *Config) ValidateFlags() error {
 // AddFlags adds flags for a specific AutoScaler to the specified FlagSet
 func (c *Config) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.Address, "listen", c.Address, "<address>:<port> to listen on")
+	fs.StringVar(&c.UserAgent, "user-agent", "", "user-agent metadata to apply to requests")
 	fs.StringVar(&c.CertFile, "tls-cert-file", c.CertFile, "File containing the default x509 Certificate for HTTPS.")
 	fs.StringVar(&c.KeyFile, "tls-private-key-file", c.KeyFile, "File containing the default x509 private key matching --tls-cert-file.")
 	fs.StringVar(&c.KeystoneURL, "keystone-url", c.KeystoneURL, "URL for the OpenStack Keystone API")

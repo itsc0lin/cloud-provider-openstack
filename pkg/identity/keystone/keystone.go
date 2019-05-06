@@ -388,7 +388,7 @@ func (k *KeystoneAuth) authorizeToken(w http.ResponseWriter, r *http.Request, da
 
 // NewKeystoneAuth returns a new KeystoneAuth controller
 func NewKeystoneAuth(c *Config) (*KeystoneAuth, error) {
-	keystoneClient, err := createKeystoneClient(c.KeystoneURL, c.KeystoneCA)
+	keystoneClient, err := createKeystoneClient(c.KeystoneURL, c.KeystoneCA, c.UserAgent)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize keystone client: %v", err)
 	}
@@ -554,7 +554,7 @@ func createKubernetesClient(kubeConfig string) (*kubernetes.Clientset, error) {
 	return client, nil
 }
 
-func createKeystoneClient(authURL string, caFile string) (*gophercloud.ServiceClient, error) {
+func createKeystoneClient(authURL string, caFile string, userAgent string) (*gophercloud.ServiceClient, error) {
 	// FIXME: Enable this check later
 	//if !strings.HasPrefix(authURL, "https") {
 	//	return nil, errors.New("Auth URL should be secure and start with https")
@@ -574,6 +574,10 @@ func createKeystoneClient(authURL string, caFile string) (*gophercloud.ServiceCl
 	}
 	opts := gophercloud.AuthOptions{IdentityEndpoint: authURL}
 	provider, err := createIdentityV3Provider(opts, transport)
+	provider.UserAgent.Prepend("k8s-keystone-auth")
+	if userAgent != "" {
+		provider.UserAgent.Prepend(userAgent)
+	}
 	if err != nil {
 		return nil, err
 	}

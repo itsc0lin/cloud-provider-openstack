@@ -43,7 +43,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	gcfg "gopkg.in/gcfg.v1"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	netutil "k8s.io/apimachinery/pkg/util/net"
 	certutil "k8s.io/client-go/util/cert"
@@ -163,6 +163,7 @@ type OpenStack struct {
 type Config struct {
 	Global struct {
 		AuthURL    string `gcfg:"auth-url"`
+		UserAgent  string `gcfg:"user-agent"`
 		Username   string
 		UserID     string `gcfg:"user-id"`
 		Password   string
@@ -186,6 +187,7 @@ type Config struct {
 
 func logcfg(cfg Config) {
 	klog.V(5).Infof("AuthURL: %s", cfg.Global.AuthURL)
+	klog.V(5).Infof("UserAgent: %s", cfg.Global.UserAgent)
 	klog.V(5).Infof("Username: %s", cfg.Global.Username)
 	klog.V(5).Infof("UserID: %s", cfg.Global.UserID)
 	klog.V(5).Infof("TenantID: %s", cfg.Global.TenantID)
@@ -247,6 +249,7 @@ func (cfg Config) toAuth3Options() tokens3.AuthOptions {
 // TODO: Replace this with gophercloud upstream once community moves away from cloud.conf
 func configFromEnv() (cfg Config, ok bool) {
 	cfg.Global.AuthURL = os.Getenv("OS_AUTH_URL")
+	cfg.Global.UserAgent = os.Getenv("OS_USER_AGENT")
 	cfg.Global.Username = os.Getenv("OS_USERNAME")
 	cfg.Global.Password = os.Getenv("OS_PASSWORD")
 	cfg.Global.Region = os.Getenv("OS_REGION_NAME")
@@ -410,6 +413,10 @@ func checkOpenStackOpts(openstackOpts *OpenStack) error {
 // NewOpenStack creates a new new instance of the openstack struct from a config struct
 func NewOpenStack(cfg Config) (*OpenStack, error) {
 	provider, err := openstack.NewClient(cfg.Global.AuthURL)
+	provider.UserAgent.Prepend("k8s-cloud-manager")
+	if cfg.Global.UserAgent != "" {
+		provider.UserAgent.Prepend(cfg.Global.UserAgent)
+	}
 	if err != nil {
 		return nil, err
 	}
